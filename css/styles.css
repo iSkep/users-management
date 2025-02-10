@@ -1,0 +1,26 @@
+.users-table__header {
+}
+
+.users-table__header_checkbox {
+    width: 5%;
+}
+
+.users-table__header_name {
+    width: 50%;
+}
+
+.users-table__header_status {
+    width: 15%;
+}
+
+.users-table__header_role {
+    width: 15%;
+}
+
+.users-table__header_options {
+    width: 15%;
+}
+
+.users-table__cell {
+    vertical-align: middle;
+}
