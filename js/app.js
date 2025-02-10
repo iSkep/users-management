@@ -113,7 +113,7 @@ $(document).ready(function () {
     $('[data-check-all]').change(onCheckAllChange);
     $('.table').change(function (e) {
         if (e.target && e.target.classList.contains('user-checkbox')) {
-            onCheckboxChange();
+            updateCheckAllState();
         }
     });
 
@@ -153,6 +153,7 @@ $(document).ready(function () {
                     `;
                 });
                 $('#users-list').html(rows);
+                updateCheckAllState();
             },
         });
     }
@@ -162,7 +163,7 @@ $(document).ready(function () {
         $('.user-checkbox').prop('checked', this.checked);
     }
 
-    function onCheckboxChange() {
+    function updateCheckAllState() {
         const isAllChecked = $('.user-checkbox').length === $('.user-checkbox:checked').length;
 
         $('[data-check-all]').prop('checked', isAllChecked);
