@@ -11,14 +11,14 @@ $conn = new mysqli($servername, $username, $password, $dbname);
 
 // Check connection
 if ($conn->connect_error) {
-    response(false, 500, "Database connection failed");
+    sendResponse(false, 500, "Database connection failed");
 }
 
 // Determine the action from the request
 $action = $_REQUEST['action'] ?? '';
 
 // Function to send a JSON response
-function response($status, $code = null, $message = null, $data = [])
+function sendResponse($status, $code = null, $message = null, $data = [])
 {
     echo json_encode([
         "status" => $status,
@@ -34,7 +34,7 @@ function executeQuery($query, $types = "", $params = [], $fetchAll = false)
     $stmt = $conn->prepare($query);
 
     if (!$stmt) {
-        response(false, 500, "Database error: " . $conn->error);
+        sendResponse(false, 500, "Database error: " . $conn->error);
     }
 
     // Bind parameters if they exist
@@ -66,18 +66,22 @@ switch ($action) {
             $user['status'] = (bool) $user['status'];
         }
 
-        response(true, null, null, ["users" => $users]);
+        sendResponse(true, null, null, ["users" => $users]);
         break;
 
     case 'get_user': // Retrieve information about a specific user
         $id = $_GET['id'] ?? null;
-        if (!$id) response(false, 400, "User ID required");
+        if (!$id) {
+            sendResponse(false, 400, "User ID required");
+        }
 
         $user = executeQuery("SELECT * FROM users WHERE id=?", "i", [$id], true);
-        if (!$user) response(false, 404, "User not found");
+        if (!$user) {
+            sendResponse(false, 404, "User not found");
+        }
 
         $user[0]['status'] = (bool) $user[0]['status'];
-        response(true, null, null, ["user" => $user[0]]);
+        sendResponse(true, null, null, ["user" => $user[0]]);
         break;
 
     case 'save_user': // Create or update a user
@@ -87,7 +91,9 @@ switch ($action) {
         $status = isset($_POST['status']) && $_POST['status'] === 'true' ? 1 : 0;
         $role = $_POST['role'] ?? 'user';
 
-        if (!$first_name || !$last_name) response(false, 400, "Fields cannot be empty");
+        if (!$first_name || !$last_name) {
+            sendResponse(false, 400, "Fields cannot be empty");
+        }
 
         if ($id) {
             // Update an existing user
@@ -98,22 +104,26 @@ switch ($action) {
             $id = $conn->insert_id;
         }
 
-        response(true, null, null, ["id" => $id]);
+        sendResponse(true, null, null, ["id" => $id]);
         break;
 
     case 'delete_user': // Delete a user
         $id = $_POST['id'] ?? null;
-        if (!$id) response(false, 400, "User ID required");
+        if (!$id) {
+            sendResponse(false, 400, "User ID required");
+        }
 
         executeQuery("DELETE FROM users WHERE id=?", "i", [$id]);
-        response(true);
+        sendResponse(true);
         break;
 
     case 'bulk_action': // Bulk operations (activate, deactivate, delete)
         $ids = $_POST['ids'] ?? [];
         $operation = $_POST['operation'] ?? '';
 
-        if (empty($ids) || !is_array($ids)) response(false, 400, "No users selected");
+        if (empty($ids) || !is_array($ids)) {
+            sendResponse(false, 400, "No users selected");
+        }
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $types = str_repeat('i', count($ids));
@@ -129,14 +139,14 @@ switch ($action) {
                 executeQuery("DELETE FROM users WHERE id IN ($placeholders)", $types, $ids);
                 break;
             default:
-                response(false, 400, "Invalid operation");
+                sendResponse(false, 400, "Invalid operation");
         }
 
-        response(true);
+        sendResponse(true);
         break;
 
     default:
-        response(false, 400, "Invalid action");
+        sendResponse(false, 400, "Invalid action");
 }
 
 // Close the database connection
