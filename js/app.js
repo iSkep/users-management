@@ -75,7 +75,8 @@ $(document).ready(function () {
 
     // Bulk Actions
     $('[data-apply-action]').click(function () {
-        let selectedOperation = $('[data-first-select]').val();
+        let $parent = $(this).closest('[data-select-container]');
+        let selectedOperation = $parent.find('[data-select]').val();
         let selectedIds = $('.user-checkbox:checked')
             .map(function () {
                 return this.value;
@@ -102,12 +103,12 @@ $(document).ready(function () {
     });
 
     // Sync Selects
-    $(document).ready(function () {
-        $('[data-first-select], [data-second-select]').on('change', function () {
-            let selectedValue = $(this).val();
-            $('[data-first-select], [data-second-select]').val(selectedValue);
-        });
-    });
+    // $(document).ready(function () {
+    //     $('[data-first-select], [data-second-select]').on('change', function () {
+    //         let selectedValue = $(this).val();
+    //         $('[data-first-select], [data-second-select]').val(selectedValue);
+    //     });
+    // });
 
     // Checkboxes
     $('[data-check-all]').change(onCheckAllChange);
