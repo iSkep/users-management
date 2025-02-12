@@ -32,6 +32,7 @@ $(document).ready(function () {
                     // case new user
                     if (!$('#user-id').val()) {
                         addUserRow(response.user);
+                        updateCheckAllState();
                     } else {
                         // case edit user
                         updateUserRow(response.user);
@@ -66,11 +67,12 @@ $(document).ready(function () {
     // Delete User
     $(document).on('click', '[data-delete-user]', function () {
         const userId = $(this).closest('tr').data('user-id');
+        const userName = $(this).closest('tr').find('.user-name').text();
         const row = $(this).closest('tr');
 
         row.addClass('removing');
 
-        showConfirm('Are you sure?', function (confirmed) {
+        showConfirm(`Delete user <strong>${userName}</strong>?`, null, function (confirmed) {
             if (confirmed) {
                 $.ajax({
                     url: backendUrl,
@@ -112,9 +114,15 @@ $(document).ready(function () {
         }
 
         if (selectedOperation === 'delete') {
+            const usersToDelete = $('.user-checkbox:checked')
+                .map(function () {
+                    return $(this).closest('tr').find('.user-name').text();
+                })
+                .get();
+
             $('.user-checkbox:checked').closest('tr').addClass('removing');
 
-            showConfirm('Are you sure you want to delete selected users?', function (confirmed) {
+            showConfirm('Are you sure you want to delete selected users?', usersToDelete, function (confirmed) {
                 if (confirmed) {
                     executeBulkAction(selectedOperation, selectedIds);
                 } else {
@@ -276,8 +284,18 @@ $(document).ready(function () {
     }
 
     // Confirm Modal
-    function showConfirm(message, callback) {
-        $('[data-confirm-body]').text(message);
+    function showConfirm(message, users, callback) {
+        let userListHtml = '';
+
+        if (users && users.length > 0) {
+            userListHtml = '<ul class="delete-list">';
+            users.forEach((user) => {
+                userListHtml += `<li>${user}</li>`;
+            });
+            userListHtml += '</ul>';
+        }
+
+        $('[data-confirm-body]').html(message + userListHtml);
         $('[data-confirm-modal]').modal('show');
 
         $('[data-confirm-action]')
