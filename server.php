@@ -104,7 +104,10 @@ switch ($action) {
             $id = $conn->insert_id;
         }
 
-        sendResponse(true, null, null, ["id" => $id]);
+        $user = executeQuery("SELECT * FROM users WHERE id=?", "i", [$id], true)[0];
+        $user['status'] = (bool) $user['status'];
+
+        sendResponse(true, null, null, ["user" => $user]);
         break;
 
     case 'delete_user': // Delete a user

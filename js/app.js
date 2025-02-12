@@ -27,9 +27,19 @@ $(document).ready(function () {
             success: function (response) {
                 if (response.status) {
                     $('[data-user-modal]').modal('hide');
-                    loadUsers();
+                    $('.error-message').hide();
+
+                    // case new user
+                    if (!$('#user-id').val()) {
+                        addUserRow(response.user);
+                    } else {
+                        // case edit user
+                        updateUserRow(response.user);
+                    }
                 } else {
-                    showMessage('Error', response.error.message);
+                    $('.error-message')
+                        .text('Error: ' + response.error.message)
+                        .show();
                 }
             },
         });
@@ -37,7 +47,7 @@ $(document).ready(function () {
 
     // Edit User
     $(document).on('click', '[data-edit-user]', function () {
-        let userId = $(this).data('id');
+        const userId = $(this).closest('tr').data('user-id');
 
         $.get(`${backendUrl}?action=get_user&id=${userId}`, function (response) {
             if (response.status) {
@@ -55,29 +65,37 @@ $(document).ready(function () {
 
     // Delete User
     $(document).on('click', '[data-delete-user]', function () {
-        let userId = $(this).data('id');
+        const userId = $(this).closest('tr').data('user-id');
+        const row = $(this).closest('tr');
 
-        showConfirm('Are you sure?', function () {
-            $.ajax({
-                url: backendUrl,
-                type: 'POST',
-                data: { action: 'delete_user', id: userId },
-                success: function (response) {
-                    if (response.status) {
-                        loadUsers();
-                    } else {
-                        showMessage('Error', response.error.message);
-                    }
-                },
-            });
+        row.addClass('removing');
+
+        showConfirm('Are you sure?', function (confirmed) {
+            if (confirmed) {
+                $.ajax({
+                    url: backendUrl,
+                    type: 'POST',
+                    data: { action: 'delete_user', id: userId },
+                    success: function (response) {
+                        if (response.status) {
+                            row.remove();
+                        } else {
+                            showMessage('Error', response.error.message);
+                            row.removeClass('removing');
+                        }
+                    },
+                });
+            } else {
+                row.removeClass('removing');
+            }
         });
     });
 
     // Bulk Actions
     $('[data-apply-action]').click(function () {
-        let $parent = $(this).closest('[data-select-container]');
-        let selectedOperation = $parent.find('[data-select]').val();
-        let selectedIds = $('.user-checkbox:checked')
+        const parent = $(this).closest('[data-select-container]');
+        const selectedOperation = parent.find('[data-select]').val();
+        const selectedIds = $('.user-checkbox:checked')
             .map(function () {
                 return this.value;
             })
@@ -94,8 +112,14 @@ $(document).ready(function () {
         }
 
         if (selectedOperation === 'delete') {
-            showConfirm('Are you sure you want to delete selected users?', function () {
-                executeBulkAction(selectedOperation, selectedIds);
+            $('.user-checkbox:checked').closest('tr').addClass('removing');
+
+            showConfirm('Are you sure you want to delete selected users?', function (confirmed) {
+                if (confirmed) {
+                    executeBulkAction(selectedOperation, selectedIds);
+                } else {
+                    $('.user-checkbox:checked').closest('tr').removeClass('removing');
+                }
             });
         } else {
             executeBulkAction(selectedOperation, selectedIds);
@@ -120,8 +144,9 @@ $(document).ready(function () {
 
     // =====================================================================================================================
     // Functions and Handlers
+    // =====================================================================================================================
 
-    // Load Users
+    // User Management Functions
     function loadUsers() {
         $.ajax({
             url: backendUrl,
@@ -131,32 +156,75 @@ $(document).ready(function () {
                 let rows = '';
                 response.users.forEach((user) => {
                     rows += `
-                    <tr>
-                        <td class="users-table__cell"><input type="checkbox" class="user-checkbox" value="${
-                            user.id
-                        }"></td>
-                        <td class="users-table__cell">${user.first_name} ${user.last_name}</td>
-                        <td class="users-table__cell">${
-                            user.status
-                                ? '<span class="text-success">●</span>'
-                                : '<span class="text-secondary">●</span>'
-                        }</td>
-                        <td class="users-table__cell">${user.role}</td>
+                    <tr data-user-id="${user.id}">
                         <td class="users-table__cell">
-                            <button class="btn btn-sm btn-outline-warning" data-id="${
-                                user.id
-                            }" data-edit-user>✎</button>
-                            <button class="btn btn-sm btn-outline-danger" data-id="${
-                                user.id
-                            }" data-delete-user>🗑</button>
+                            <input type="checkbox" class="user-checkbox" value="${user.id}">
+                        </td>
+                        <td class="users-table__cell user-name">${user.first_name} ${user.last_name}</td>
+                        <td class="users-table__cell user-status">
+                            <span class="status ${user.status ? 'active' : ''}">
+                                <i class="bi bi-circle-fill"></i>
+                            </span>
+                        </td>
+                        <td class="users-table__cell user-role">${user.role}</td>
+                        <td class="users-table__cell">
+                            <button class="btn btn-sm btn-outline-warning" data-id="${user.id}" data-edit-user>
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" data-id="${user.id}" data-delete-user>
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     `;
                 });
+
                 $('#users-list').html(rows);
                 updateCheckAllState();
             },
         });
+    }
+
+    function addUserRow(user) {
+        const newRow = `
+            <tr data-user-id="${user.id}">
+                <td class="users-table__cell">
+                    <input type="checkbox" class="user-checkbox" value="${user.id}">
+                </td>
+                <td class="users-table__cell user-name">${user.first_name} ${user.last_name}</td>
+                <td class="users-table__cell user-status">
+                    <span class="status ${user.status ? 'active' : ''}">
+                        <i class="bi bi-circle-fill"></i>
+                    </span>
+                </td>
+                <td class="users-table__cell user-role">${user.role}</td>
+                <td class="users-table__cell">
+                    <button class="btn btn-sm btn-outline-warning" data-id="${user.id}" data-edit-user>
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" data-id="${user.id}" data-delete-user>
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+
+        $('#users-list').append(newRow);
+    }
+
+    function updateUserRow(user) {
+        const row = $(`[data-user-id="${user.id}"]`);
+        const statusCell = row.find('.status');
+
+        row.find('.user-name').text(user.first_name + ' ' + user.last_name);
+
+        if (user.status) {
+            statusCell.addClass('active');
+        } else {
+            statusCell.removeClass('active');
+        }
+
+        row.find('.user-role').text(user.role);
     }
 
     // Check All Checkbox
@@ -178,7 +246,21 @@ $(document).ready(function () {
             data: { action: 'bulk_action', operation: operation, ids: ids },
             success: function (response) {
                 if (response.status) {
-                    loadUsers();
+                    ids.forEach((id) => {
+                        const row = $(`tr[data-user-id="${id}"]`);
+
+                        if (operation === 'delete') {
+                            row.remove();
+                        } else if (operation === 'activate' || operation === 'deactivate') {
+                            const statusCell = row.find('.status');
+
+                            if (operation === 'activate') {
+                                statusCell.addClass('active');
+                            } else {
+                                statusCell.removeClass('active');
+                            }
+                        }
+                    });
                 } else {
                     showMessage('Error', response.error.message);
                 }
@@ -202,7 +284,23 @@ $(document).ready(function () {
             .off('click')
             .on('click', function () {
                 $('[data-confirm-modal]').modal('hide');
-                callback();
+                callback(true);
             });
+
+        $('[data-confirm-modal]').on('hidden.bs.modal', function () {
+            callback(false);
+        });
     }
+
+    // BS modal aria-hidden fix https://github.com/twbs/bootstrap/issues/41005
+    $(window).on('hide.bs.modal', function () {
+        if ($(document.activeElement)[0] instanceof HTMLElement) {
+            $(document.activeElement).blur();
+        }
+    });
+
+    // Hide error
+    $('[data-user-modal]').on('hidden.bs.modal', function () {
+        $('.error-message').hide();
+    });
 });

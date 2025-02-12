@@ -1,3 +1,10 @@
+@font-face {
+    font-display: block;
+    font-family: 'bootstrap-icons';
+    src: url('../fonts/bootstrap-icons.woff2?dd67030699838ea613ee6dbda90effa6') format('woff2'),
+        url('../fonts/bootstrap-icons.woff?dd67030699838ea613ee6dbda90effa6') format('woff');
+}
+
 .users-table__header {
 }
 
@@ -23,4 +30,24 @@
 
 .users-table__cell {
     vertical-align: middle;
+    transition: background-color 0.3s ease 0s;
+}
+
+.status {
+    font-size: 10px;
+    color: #6c757d;
+}
+
+.status.active i {
+    color: #28a745;
+}
+
+.table .removing .users-table__cell {
+    background-color: #ffcccc;
+}
+
+.error-message {
+    display: none;
+    margin-right: auto;
+    color: #ff3333;
 }
