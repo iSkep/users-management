@@ -1,8 +1,9 @@
 $(document).ready(function () {
     const backendUrl = 'server.php';
+    let roles = {};
 
     // Initial Load
-    loadUsers();
+    initDataLoad();
 
     // Add User
     $('[data-add-user]').click(function () {
@@ -22,7 +23,7 @@ $(document).ready(function () {
                 firstName: $('#first-name').val(),
                 lastName: $('#last-name').val(),
                 status: $('#status').is(':checked'),
-                role: $('#role').val(),
+                role_id: $('#role').val(),
             },
             success: function (response) {
                 if (response.status) {
@@ -49,6 +50,7 @@ $(document).ready(function () {
     // Edit User
     $(document).on('click', '[data-edit-user]', function () {
         const userId = $(this).closest('tr').data('user-id');
+        const userName = $(this).closest('tr').find('.user-name').text();
 
         $.get(`${backendUrl}?action=get_user&id=${userId}`, function (response) {
             if (response.status) {
@@ -56,10 +58,14 @@ $(document).ready(function () {
                 $('#first-name').val(response.user.first_name);
                 $('#last-name').val(response.user.last_name);
                 $('#status').prop('checked', response.user.status);
-                $('#role').val(response.user.role);
+                $('#role').val(response.user.role_id);
                 $('[data-user-modal]').modal('show');
             } else {
-                showMessage('Error', response.error.message);
+                if (response.not_found_id) {
+                    showMessage('Error', response.error.message + `: <span class="fw-bold">${userName}</span>`);
+                } else {
+                    showMessage('Error', response.error.message);
+                }
             }
         });
     });
@@ -155,13 +161,15 @@ $(document).ready(function () {
     // =====================================================================================================================
 
     // User Management Functions
-    function loadUsers() {
+    function initDataLoad() {
         $.ajax({
             url: backendUrl,
             type: 'GET',
             data: { action: 'get_users' },
             success: function (response) {
+                roles = response.roles;
                 let rows = '';
+
                 response.users.forEach((user) => {
                     rows += `
                     <tr data-user-id="${user.id}">
@@ -174,7 +182,7 @@ $(document).ready(function () {
                                 <i class="bi bi-circle-fill"></i>
                             </span>
                         </td>
-                        <td class="users-table__cell user-role">${user.role}</td>
+                        <td class="users-table__cell user-role">${roles[user.role_id]}</td>
                         <td class="users-table__cell">
                             <button class="btn btn-sm btn-outline-warning" data-id="${user.id}" data-edit-user>
                                 <i class="bi bi-pencil"></i>
@@ -187,8 +195,13 @@ $(document).ready(function () {
                     `;
                 });
 
+                let rolesOptions = '';
+                Object.entries(roles).forEach(([roleId, roleName]) => {
+                    rolesOptions += `<option value="${roleId}">${roleName}</option>`;
+                });
+
                 $('#users-list').html(rows);
-                updateCheckAllState();
+                $('#role').html(rolesOptions);
             },
         });
     }
@@ -205,7 +218,7 @@ $(document).ready(function () {
                         <i class="bi bi-circle-fill"></i>
                     </span>
                 </td>
-                <td class="users-table__cell user-role">${user.role}</td>
+                <td class="users-table__cell user-role">${roles[user.role_id]}</td>
                 <td class="users-table__cell">
                     <button class="btn btn-sm btn-outline-warning" data-id="${user.id}" data-edit-user>
                         <i class="bi bi-pencil"></i>
@@ -270,7 +283,30 @@ $(document).ready(function () {
                         }
                     });
                 } else {
-                    showMessage('Error', response.error.message);
+                    if (response.not_found_ids && response.not_found_ids.length > 0) {
+                        const notFoundIds = response.not_found_ids;
+                        const notFoundNames = [];
+
+                        notFoundIds.forEach(function (id) {
+                            const row = $(`tr[data-user-id="${id}"]`);
+                            const userName = row.find('.user-name').text();
+
+                            if (userName) {
+                                notFoundNames.push(userName);
+                            }
+                        });
+
+                        let userListHtml = '<ul class="users-list fw-bold">';
+
+                        notFoundNames.forEach(function (name) {
+                            userListHtml += `<li>${name}</li>`;
+                        });
+                        userListHtml += '</ul>';
+
+                        showMessage('Error', response.error.message + userListHtml);
+                    } else {
+                        showMessage('Error', response.error.message);
+                    }
                 }
             },
         });
@@ -288,7 +324,7 @@ $(document).ready(function () {
         let userListHtml = '';
 
         if (users && users.length > 0) {
-            userListHtml = '<ul class="delete-list">';
+            userListHtml = '<ul class="users-list fw-bold">';
             users.forEach((user) => {
                 userListHtml += `<li>${user}</li>`;
             });
