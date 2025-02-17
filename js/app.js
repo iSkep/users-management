@@ -92,6 +92,7 @@ $(document).ready(function () {
                     success: function (response) {
                         if (response.status) {
                             row.remove();
+                            updateCheckAllState();
                         } else {
                             showMessage('Error', response.error.message);
                             row.removeClass('removing');
