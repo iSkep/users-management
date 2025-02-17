@@ -1,3 +1,14 @@
+<?php
+
+require_once 'server.php';
+
+$data = loadInitialData();
+
+$users = $data['users'] ?? [];
+$roles = $data['roles'] ?? [];
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -38,7 +49,31 @@
                 </tr>
             </thead>
             <tbody id="users-list">
-                <!-- AJAX will load users here -->
+                <?php foreach ($users as $user): ?>
+                    <tr data-user-id="<?= $user['id'] ?>">
+                        <td class="users-table__cell">
+                            <input type="checkbox" class="user-checkbox" value="<?= $user['id'] ?>">
+                        </td>
+                        <td class="users-table__cell user-name">
+                            <span class="user-name__first"><?= $user['first_name'] ?></span>
+                            <span class="user-name__last"><?= $user['last_name'] ?></span>
+                        </td>
+                        <td class="users-table__cell user-status">
+                            <span class="status <?= $user['status'] ? 'active' : '' ?>">
+                                <i class="bi bi-circle-fill"></i>
+                            </span>
+                        </td>
+                        <td class="users-table__cell user-role"><?= $roles[$user['role_id']] ?></td>
+                        <td class="users-table__cell">
+                            <button class="btn btn-sm btn-outline-warning" data-id="<?= $user['id'] ?>" data-edit-user>
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" data-id="<?= $user['id'] ?>" data-delete-user>
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
             </tbody>
         </table>
         <div class="d-flex justify-content-between mb-3">
@@ -80,7 +115,9 @@
                         <div class="mb-3">
                             <label for="role" class="form-label">Role</label>
                             <select id="role" class="form-select">
-                                <!-- AJAX will load options here -->
+                                <?php foreach ($roles as $roleId => $roleName): ?>
+                                    <option value="<?= $roleId ?>"><?= $roleName ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </form>

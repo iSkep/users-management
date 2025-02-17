@@ -1,12 +1,14 @@
 $(document).ready(function () {
-    const backendUrl = 'server.php';
-    let roles = {};
+    const backendUrl = 'actions.php';
+    roles = {};
 
-    // Initial Load
-    initDataLoad();
+    $('#role option').each(function () {
+        roles[$(this).val()] = $(this).text();
+    });
 
     // Add User
     $('[data-add-user]').click(function () {
+        $('.modal-title').text('Add User');
         $('#user-id').val('');
         $('[data-form]')[0].reset();
         $('[data-user-modal]').modal('show');
@@ -14,16 +16,20 @@ $(document).ready(function () {
 
     // Save User
     $('[data-save-btn]').click(function () {
+        const formData = {
+            id: $('#user-id').val(),
+            firstName: $('#first-name').val(),
+            lastName: $('#last-name').val(),
+            status: $('#status').is(':checked'),
+            role_id: $('#role').val(),
+        };
+
         $.ajax({
             url: backendUrl,
             type: 'POST',
             data: {
                 action: 'save_user',
-                id: $('#user-id').val(),
-                firstName: $('#first-name').val(),
-                lastName: $('#last-name').val(),
-                status: $('#status').is(':checked'),
-                role_id: $('#role').val(),
+                ...formData,
             },
             success: function (response) {
                 if (response.status) {
@@ -31,12 +37,14 @@ $(document).ready(function () {
                     $('.error-message').hide();
 
                     // case new user
-                    if (!$('#user-id').val()) {
-                        addUserRow(response.user);
+                    if (!formData.id) {
+                        formData.id = response.user_id;
+
+                        addUserRow(formData);
                         updateCheckAllState();
                     } else {
                         // case edit user
-                        updateUserRow(response.user);
+                        updateUserRow(formData);
                     }
                 } else {
                     $('.error-message')
@@ -49,25 +57,22 @@ $(document).ready(function () {
 
     // Edit User
     $(document).on('click', '[data-edit-user]', function () {
-        const userId = $(this).closest('tr').data('user-id');
-        const userName = $(this).closest('tr').find('.user-name').text();
+        const row = $(this).closest('tr');
+        const userId = row.data('user-id');
+        const firstName = row.find('.user-name__first').text();
+        const lastName = row.find('.user-name__last').text();
+        const status = row.find('.status').hasClass('active');
+        const role = row.find('.user-role').text();
 
-        $.get(`${backendUrl}?action=get_user&id=${userId}`, function (response) {
-            if (response.status) {
-                $('#user-id').val(response.user.id);
-                $('#first-name').val(response.user.first_name);
-                $('#last-name').val(response.user.last_name);
-                $('#status').prop('checked', response.user.status);
-                $('#role').val(response.user.role_id);
-                $('[data-user-modal]').modal('show');
-            } else {
-                if (response.not_found_id) {
-                    showMessage('Error', response.error.message + `: <span class="fw-bold">${userName}</span>`);
-                } else {
-                    showMessage('Error', response.error.message);
-                }
-            }
-        });
+        // Fill the form with user data
+        $('#user-id').val(userId);
+        $('#first-name').val(firstName);
+        $('#last-name').val(lastName);
+        $('#status').prop('checked', status);
+        $('#role').val(Object.keys(roles).find((key) => roles[key] === role));
+
+        $('.modal-title').text('Edit User');
+        $('[data-user-modal]').modal('show');
     });
 
     // Delete User
@@ -161,69 +166,27 @@ $(document).ready(function () {
     // =====================================================================================================================
 
     // User Management Functions
-    function initDataLoad() {
-        $.ajax({
-            url: backendUrl,
-            type: 'GET',
-            data: { action: 'get_users' },
-            success: function (response) {
-                roles = response.roles;
-                let rows = '';
-
-                response.users.forEach((user) => {
-                    rows += `
-                    <tr data-user-id="${user.id}">
-                        <td class="users-table__cell">
-                            <input type="checkbox" class="user-checkbox" value="${user.id}">
-                        </td>
-                        <td class="users-table__cell user-name">${user.first_name} ${user.last_name}</td>
-                        <td class="users-table__cell user-status">
-                            <span class="status ${user.status ? 'active' : ''}">
-                                <i class="bi bi-circle-fill"></i>
-                            </span>
-                        </td>
-                        <td class="users-table__cell user-role">${roles[user.role_id]}</td>
-                        <td class="users-table__cell">
-                            <button class="btn btn-sm btn-outline-warning" data-id="${user.id}" data-edit-user>
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" data-id="${user.id}" data-delete-user>
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    `;
-                });
-
-                let rolesOptions = '';
-                Object.entries(roles).forEach(([roleId, roleName]) => {
-                    rolesOptions += `<option value="${roleId}">${roleName}</option>`;
-                });
-
-                $('#users-list').html(rows);
-                $('#role').html(rolesOptions);
-            },
-        });
-    }
-
-    function addUserRow(user) {
+    function addUserRow(data) {
         const newRow = `
-            <tr data-user-id="${user.id}">
+            <tr data-user-id="${data.id}">
                 <td class="users-table__cell">
-                    <input type="checkbox" class="user-checkbox" value="${user.id}">
+                    <input type="checkbox" class="user-checkbox" value="${data.id}">
                 </td>
-                <td class="users-table__cell user-name">${user.first_name} ${user.last_name}</td>
+                <td class="users-table__cell user-name">
+                    <span class="user-name__first">${data.firstName}</span>
+                    <span class="user-name__last">${data.lastName}</span>
+                </td>
                 <td class="users-table__cell user-status">
-                    <span class="status ${user.status ? 'active' : ''}">
+                    <span class="status ${data.status ? 'active' : ''}">
                         <i class="bi bi-circle-fill"></i>
                     </span>
                 </td>
-                <td class="users-table__cell user-role">${roles[user.role_id]}</td>
+                <td class="users-table__cell user-role">${roles[data.role_id]}</td>
                 <td class="users-table__cell">
-                    <button class="btn btn-sm btn-outline-warning" data-id="${user.id}" data-edit-user>
+                    <button class="btn btn-sm btn-outline-warning" data-id="${data.id}" data-edit-user>
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger" data-id="${user.id}" data-delete-user>
+                    <button class="btn btn-sm btn-outline-danger" data-id="${data.id}" data-delete-user>
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -233,19 +196,20 @@ $(document).ready(function () {
         $('#users-list').append(newRow);
     }
 
-    function updateUserRow(user) {
-        const row = $(`[data-user-id="${user.id}"]`);
+    function updateUserRow(data) {
+        const row = $(`[data-user-id="${data.id}"]`);
         const statusCell = row.find('.status');
 
-        row.find('.user-name').text(user.first_name + ' ' + user.last_name);
+        row.find('.user-name__first').text(data.firstName);
+        row.find('.user-name__last').text(data.lastName);
 
-        if (user.status) {
+        if (data.status) {
             statusCell.addClass('active');
         } else {
             statusCell.removeClass('active');
         }
 
-        row.find('.user-role').text(user.role);
+        row.find('.user-role').text(roles[data.role_id]);
     }
 
     // Check All Checkbox
