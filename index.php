@@ -2,7 +2,7 @@
 
 require_once 'server.php';
 
-$data = loadInitialData();
+$data = loadInitialData($db, $table, $roles);
 
 $users = $data['users'] ?? [];
 $roles = $data['roles'] ?? [];
@@ -25,7 +25,7 @@ $roles = $data['roles'] ?? [];
     <div class="container pt-3">
         <h1 class="text-center">Users</h1>
         <div class="d-flex justify-content-between mb-3">
-            <button class="btn btn-primary me-2" type="button" data-add-user>Add User</button>
+            <button class="btn btn-primary me-2" type="button" data-show-user-modal>Add User</button>
             <div class="d-flex" data-select-container>
                 <select class="form-select me-2" data-select>
                     <option value="">- Please Select -</option>
@@ -65,7 +65,7 @@ $roles = $data['roles'] ?? [];
                         </td>
                         <td class="users-table__cell user-role"><?= $roles[$user['role_id']] ?></td>
                         <td class="users-table__cell">
-                            <button class="btn btn-sm btn-outline-warning" data-id="<?= $user['id'] ?>" data-edit-user>
+                            <button class="btn btn-sm btn-outline-warning" data-id="<?= $user['id'] ?>" data-show-user-modal data-edit-user>
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger" data-id="<?= $user['id'] ?>" data-delete-user>
@@ -77,7 +77,7 @@ $roles = $data['roles'] ?? [];
             </tbody>
         </table>
         <div class="d-flex justify-content-between mb-3">
-            <button class="btn btn-primary me-2" type="button" data-add-user>Add User</button>
+            <button class="btn btn-primary me-2" type="button" data-show-user-modal>Add User</button>
             <div class="d-flex" data-select-container>
                 <select class="form-select me-2" data-select>
                     <option value="">- Please Select -</option>

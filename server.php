@@ -1,53 +1,18 @@
 <?php
 
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "softsprint";
-$table = "users";
+require_once "core/Database.php";
 
-// Config
+// Load config
+$config = require 'config.php';
+
+$db = new Database($config['host'], $config['username'], $config['password'], $config['dbname']);
+$table = "users";
 $roles = [
     1 => 'Admin',
     2 => 'User',
 ];
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Database connection failed: " . $conn->connect_error);
-}
-
-function executeQuery($query, $types = "", $params = [], $fetchAll = false)
-{
-    global $conn;
-    $stmt = $conn->prepare($query);
-
-    if (!$stmt) {
-        die("Database error: " . $conn->error);
-    }
-
-    if ($types && $params) {
-        $stmt->bind_param($types, ...$params);
-    }
-
-    $stmt->execute();
-
-    if ($fetchAll) {
-        $result = $stmt->get_result();
-        $data = $result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-        return $data;
-    }
-
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
-    return $affectedRows;
-}
-
-function formatUsers($users)
+function formatUsers(array $users): array
 {
     global $roles;
 
@@ -60,11 +25,10 @@ function formatUsers($users)
     return $users;
 }
 
-function loadInitialData()
+function loadInitialData(Database $db, string $table, array $roles): array
 {
-    global $roles, $table;
-    $users = executeQuery("SELECT * FROM $table", "", [], true);
-    $users = formatUsers($users);
+    $users = $db->executeQuery("SELECT * FROM $table", "", [], true);
+    $users = formatUsers($users, $roles);
 
     return [
         'users' => $users,

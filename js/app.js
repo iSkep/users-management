@@ -6,14 +6,6 @@ $(document).ready(function () {
         roles[$(this).val()] = $(this).text();
     });
 
-    // Add User
-    $('[data-add-user]').click(function () {
-        $('.modal-title').text('Add User');
-        $('#user-id').val('');
-        $('[data-form]')[0].reset();
-        $('[data-user-modal]').modal('show');
-    });
-
     // Save User
     $('[data-save-btn]').click(function () {
         const formData = {
@@ -27,10 +19,12 @@ $(document).ready(function () {
         $.ajax({
             url: backendUrl,
             type: 'POST',
-            data: {
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({
                 action: 'save_user',
                 ...formData,
-            },
+            }),
             success: function (response) {
                 if (response.status) {
                     $('[data-user-modal]').modal('hide');
@@ -55,23 +49,25 @@ $(document).ready(function () {
         });
     });
 
-    // Edit User
-    $(document).on('click', '[data-edit-user]', function () {
-        const row = $(this).closest('tr');
-        const userId = row.data('user-id');
-        const firstName = row.find('.user-name__first').text();
-        const lastName = row.find('.user-name__last').text();
-        const status = row.find('.status').hasClass('active');
-        const role = row.find('.user-role').text();
+    // Add/Edit User
+    $(document).on('click', '[data-show-user-modal]', function () {
+        const isEdit = $(this).is('[data-edit-user]');
+        const modalTitle = isEdit ? 'Edit User' : 'Add User';
+        const row = isEdit ? $(this).closest('tr') : null;
+        const userId = isEdit ? row.data('user-id') : '';
+        const firstName = isEdit ? row.find('.user-name__first').text() : '';
+        const lastName = isEdit ? row.find('.user-name__last').text() : '';
+        const status = isEdit ? row.find('.status').hasClass('active') : false;
+        const role = isEdit ? row.find('.user-role').text() : '';
 
-        // Fill the form with user data
+        // Fill the form with user data or reset for new user
         $('#user-id').val(userId);
         $('#first-name').val(firstName);
         $('#last-name').val(lastName);
         $('#status').prop('checked', status);
-        $('#role').val(Object.keys(roles).find((key) => roles[key] === role));
+        $('#role').val(Object.keys(roles).find((key) => roles[key] === role) || '');
 
-        $('.modal-title').text('Edit User');
+        $('.modal-title').text(modalTitle);
         $('[data-user-modal]').modal('show');
     });
 
@@ -88,7 +84,9 @@ $(document).ready(function () {
                 $.ajax({
                     url: backendUrl,
                     type: 'POST',
-                    data: { action: 'delete_user', id: userId },
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    data: JSON.stringify({ action: 'delete_user', id: userId }),
                     success: function (response) {
                         if (response.status) {
                             row.remove();
@@ -146,14 +144,6 @@ $(document).ready(function () {
         }
     });
 
-    // Sync Selects
-    // $(document).ready(function () {
-    //     $('[data-first-select], [data-second-select]').on('change', function () {
-    //         let selectedValue = $(this).val();
-    //         $('[data-first-select], [data-second-select]').val(selectedValue);
-    //     });
-    // });
-
     // Checkboxes
     $('[data-check-all]').change(onCheckAllChange);
     $('.table').change(function (e) {
@@ -184,7 +174,7 @@ $(document).ready(function () {
                 </td>
                 <td class="users-table__cell user-role">${roles[data.role_id]}</td>
                 <td class="users-table__cell">
-                    <button class="btn btn-sm btn-outline-warning" data-id="${data.id}" data-edit-user>
+                    <button class="btn btn-sm btn-outline-warning" data-id="${data.id}" data-show-user-modal data-edit-user>
                         <i class="bi bi-pencil"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-danger" data-id="${data.id}" data-delete-user>
@@ -229,7 +219,9 @@ $(document).ready(function () {
         $.ajax({
             url: backendUrl,
             type: 'POST',
-            data: { action: 'bulk_action', operation: operation, ids: ids },
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({ action: 'bulk_action', operation: operation, ids: ids }),
             success: function (response) {
                 if (response.status) {
                     ids.forEach((id) => {
