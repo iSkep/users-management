@@ -1,10 +1,5 @@
 $(document).ready(function () {
     const backendUrl = 'actions.php';
-    roles = {};
-
-    $('#role option').each(function () {
-        roles[$(this).val()] = $(this).text();
-    });
 
     // Save User
     $('[data-save-btn]').click(function () {
@@ -27,6 +22,8 @@ $(document).ready(function () {
             }),
             success: function (response) {
                 if (response.status) {
+                    formData.role = $('#role').find(':selected').text();
+
                     $('[data-user-modal]').modal('hide');
                     $('.error-message').hide();
 
@@ -65,7 +62,15 @@ $(document).ready(function () {
         $('#first-name').val(firstName);
         $('#last-name').val(lastName);
         $('#status').prop('checked', status);
-        $('#role').val(Object.keys(roles).find((key) => roles[key] === role) || '');
+        $('#role option').each(function () {
+            if ($(this).text() === role) {
+                $(this).prop('selected', true);
+            }
+        });
+
+        // if (!isEdit) {
+        //     $('#role').val('');
+        // }
 
         $('.modal-title').text(modalTitle);
         $('[data-user-modal]').modal('show');
@@ -172,9 +177,11 @@ $(document).ready(function () {
                         <i class="bi bi-circle-fill"></i>
                     </span>
                 </td>
-                <td class="users-table__cell user-role">${roles[data.role_id]}</td>
+                <td class="users-table__cell user-role">${data.role}</td>
                 <td class="users-table__cell">
-                    <button class="btn btn-sm btn-outline-warning" data-id="${data.id}" data-show-user-modal data-edit-user>
+                    <button class="btn btn-sm btn-outline-warning" data-id="${
+                        data.id
+                    }" data-show-user-modal data-edit-user>
                         <i class="bi bi-pencil"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-danger" data-id="${data.id}" data-delete-user>
@@ -200,7 +207,7 @@ $(document).ready(function () {
             statusCell.removeClass('active');
         }
 
-        row.find('.user-role').text(roles[data.role_id]);
+        row.find('.user-role').text(data.role);
     }
 
     // Check All Checkbox
@@ -313,5 +320,6 @@ $(document).ready(function () {
     // Hide error
     $('[data-user-modal]').on('hidden.bs.modal', function () {
         $('.error-message').hide();
+        $('#role option:selected').prop('selected', false);
     });
 });
